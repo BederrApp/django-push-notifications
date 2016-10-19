@@ -34,8 +34,8 @@ def _chunks(l, n):
 		yield l[i:i + n]
 
 
-def _gcm_send(data, content_type):
-	key = SETTINGS.get("GCM_API_KEY")
+def _gcm_send(data, content_type, key=None):
+	key = key or SETTINGS.get("GCM_API_KEY")
 	if not key:
 		raise ImproperlyConfigured(
 			'You need to set PUSH_NOTIFICATIONS_SETTINGS["GCM_API_KEY"] to send messages through GCM.'
@@ -73,7 +73,8 @@ def _gcm_send_plain(registration_id, data, **kwargs):
 
 	data = urlencode(sorted(values.items())).encode("utf-8")  # sorted items for tests
 
-	result = _gcm_send(data, "application/x-www-form-urlencoded;charset=UTF-8")
+	key = kwargs.get("key", None)
+	result = _gcm_send(data, "application/x-www-form-urlencoded;charset=UTF-8", key)
 
 	# Information about handling response from Google docs
 	# (https://developers.google.com/cloud-messaging/http):
@@ -119,7 +120,8 @@ def _gcm_send_json(registration_ids, data, **kwargs):
 	# Sort the keys for deterministic output (useful for tests)
 	data = json.dumps(values, separators=(",", ":"), sort_keys=True).encode("utf-8")
 
-	response = json.loads(_gcm_send(data, "application/json"))
+	key = kwargs.get("key", None)
+	response = json.loads(_gcm_send(data, "application/json", key))
 	if response.get("failure") or response.get("canonical_ids"):
 		ids_to_remove, old_new_ids = [], []
 		throw_error = False
