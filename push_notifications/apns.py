@@ -6,16 +6,18 @@ https://developer.apple.com/library/ios/documentation/NetworkingInternet/Concept
 
 import codecs
 import json
+import socket
 import ssl
 import struct
-import socket
 import time
-from contextlib import closing
+import urllib2
 from binascii import unhexlify
+from contextlib import closing
+
 from django.core.exceptions import ImproperlyConfigured
+
 from . import NotificationError
 from .settings import PUSH_NOTIFICATIONS_SETTINGS as SETTINGS
-
 
 APNS_ERROR_MESSAGES = {
 	1: "Processing error",
@@ -70,11 +72,20 @@ def _apns_create_socket(address_tuple, certfile=None):
 			'You need to set PUSH_NOTIFICATIONS_SETTINGS["APNS_CERTIFICATE"] to send messages through APNS.'
 		)
 
+	"""
 	try:
-		with open(certfile, "r") as f:
-			content = f.read()
+	        with open(certfile, "r") as f:
+	                content = f.read()
 	except Exception as e:
-		raise ImproperlyConfigured("The APNS certificate file at %r is not readable: %s" % (certfile, e))
+	        raise ImproperlyConfigured("The APNS certificate file at %r is not readable: %s" % (certfile, e))
+	"""
+
+	try:
+		content = urllib2.urlopen(certfile, timeout=5).read()
+	except urllib2.URLError, e:
+		raise ImproperlyConfigured(
+			"The APNS certificate file at %r is not readable: %s" % (
+			certfile, e))
 
 	try:
 		_check_certificate(content)
